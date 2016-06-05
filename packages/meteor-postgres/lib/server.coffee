@@ -45,7 +45,7 @@ SQL.Server::createTable = (tableObj) ->
   inputString = ''
 
   for key of tableObj
-    inputString += " #{key} "
+    inputString += " #{@_quote key} "
     inputString += @_DataTypes[tableObj[key][0]]
     if _.isArray(tableObj[key]) && tableObj[key].length > 1
       for i in [1..(tableObj[key].length-1)]
@@ -132,7 +132,8 @@ SQL.Server::fetch = ->
 
 SQL.Server::pg = pg
 
-SQL.Server::exec = (input, data, cb) ->
+SQL.Server::exec = (query, data, cb) ->
+  input = @_convertQuery query
   pg.connect @conString, (err, client, done) ->
     if err and cb
       cb err, null
@@ -298,3 +299,15 @@ SQL.Server::_notificationsDDP = (sub, strings, msg) ->
               reset: false
               results: results.rows[0]
           sub._session.send ddpPayload
+
+SQL.Server::_convertQuery = (input) ->
+  _.map(input.split(''), (character) ->
+    switch character
+      ## alasql also uses double quotes for strings
+      ## FIXME - this would break server queries which
+      ##         already use "
+      #when "\"" then "'"
+      # alasql brackets identifiers inside either [] or ``
+      # we transform the later to PostgreSQL single quotes
+      when "`" then "\""
+      else character).join('')
