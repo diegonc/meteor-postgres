@@ -1,5 +1,11 @@
 SQL.Sql = ->
 
+###*
+# Quote identifiers
+# @param i    Identifier to quote
+# @private
+###
+SQL.Sql::_quote = (i) -> "`#{i}`"
 
 ###*
 # Data Types
@@ -84,7 +90,7 @@ SQL.Sql::insert = (insertObj) ->
 
   # iterate through array arguments to populate input string parts
   for i in [0..keys.length-1]
-    insertString += "#{keys[i]}, "
+    insertString += "#{@_quote keys[i]}, "
     @dataArray.push insertObj[keys[i]]
     valueString += "$#{i+1}, " if Meteor.isServer
     valueString += '?, ' if Meteor.isClient
@@ -106,7 +112,7 @@ SQL.Sql::update = (updatesObj) ->
   keys = Object.keys updatesObj
 
   for i in [0..keys.length-1]
-    updateField += "#{keys[i]} = #{if _.isString(updatesObj[keys[i]]) then "'#{updatesObj[keys[i]]}'" else updatesObj[keys[i]] }, "
+    updateField += "#{@_quote keys[i]} = #{if _.isString(updatesObj[keys[i]]) then "'#{updatesObj[keys[i]]}'" else updatesObj[keys[i]] }, "
 
 
   @updateString = "UPDATE #{@table} SET #{updateField[0..-3]}"
@@ -142,7 +148,7 @@ SQL.Sql::select = ->
   if arguments.length >= 1
     for i in [0..arguments.length-1]
       args += 'DISTINCT ' if arguments[i] is 'distinct'
-      args += "#{arguments[i]}, " unless arguments[i] is 'distinct'
+      args += "#{@_quote arguments[i]}, " unless arguments[i] is 'distinct'
     args = args.substring(0, args.length - 2)
   else
     args += '*'
@@ -181,7 +187,7 @@ SQL.Sql::findOne = ->
 SQL.Sql::join = (joinType, fields, joinTable) ->
   if _.isArray(joinType)
     for i in [0..fields.length-1]
-      @joinString = " #{joinType[i]} #{joinTable[i][0]} ON #{@table}.#{fields[i]} = #{joinTable[i][0]}.#{joinTable[i][1]}"
+      @joinString = " #{joinType[i]} #{joinTable[i][0]} ON #{@table}.#{@_quote fields[i]} = #{joinTable[i][0]}.#{@_quote joinTable[i][1]}"
   else
     @joinString = " #{joinType} #{joinTable} ON #{@table}.#{fields} = #{joinTable}.#{joinTable}"
 
@@ -192,6 +198,11 @@ SQL.Sql::join = (joinType, fields, joinTable) ->
 # SQL: WHERE field operator comparator, WHERE field1 operator1 comparator1 AND/OR field2 operator2 comparator2, WHERE field IN (x, y)
 # Type: Statement
 # Notes:
+#
+# When this method receives a String with the where conditions,
+# you are on your own regarding quoting, backticks should be in
+# the string if you want to quote an indentifier.
+#
 # @param {string} directions
 # condition with ?'s for values
 # @param {string} values
@@ -229,6 +240,11 @@ SQL.Sql::where = ->
 ###*
 # SQL: ORDER BY fields
 # Notes: ASC is default, add DESC after the field name to reverse
+#
+# When this method receives a String with the order specification
+# you are on your own regarding quoting, backticks should be in
+# the string if you want to quote an indentifier.
+#
 # Type: Caboose
 # @param {string} fields
 ###
@@ -268,6 +284,11 @@ SQL.Sql::offset = (offset) ->
 
 ###*
 # SQL: GROUP BY field
+#
+# When this method receives a String with the group specification
+# you are on your own regarding quoting, backticks should be in
+# the string if you want to quote an indentifier.
+#
 # Type: Caboose
 # @param {string} group
 ###

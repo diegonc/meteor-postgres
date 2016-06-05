@@ -27,6 +27,7 @@ describe 'SQL.Server', ->
 
   testTasks = sqlStub 'test_tasks'
   testUsers = sqlStub 'test_users'
+  testQuotes = sqlStub 'test_quotes'
 
   beforeEach (done) ->
     try
@@ -222,3 +223,71 @@ describe 'SQL.Server', ->
         testTasks.remove().save()
         result = testTasks.select().fetch()?.rows
         expect(result.length).toBe(0)
+
+    describe 'quoting', ->
+      fieldsContainingSpecialChars =
+        'position.lat': ['$float']
+        'position.lng': ['$float']
+
+      setup = ->
+        testQuotes.createTable(fieldsContainingSpecialChars)
+
+      populate = (objs...) ->
+        _.map(objs, (o) ->
+          testQuotes.insert(o).save())
+
+      tearDown = ->
+        testQuotes.dropTable().save()
+
+      it 'createTable should allow fields with special characters', ->
+        expect(-> setup()).not.toThrow()
+        tearDown()
+
+      it 'insert should allow fields with special characters', ->
+        setup()
+        try
+          [result] = populate({'position.lat': 34.5, 'position.lng': 56.8})
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Object))
+          expect(result.command).toBe('INSERT')
+        finally
+          tearDown()
+
+      it 'update should allow fields with special characters', ->
+        setup()
+        try
+          populate({id: 'xy', 'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.update({'position.lat': 12.4}).where('id = ?', 'xy').save()
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Object))
+          expect(result.command).toBe('UPDATE')
+        finally
+          tearDown()
+
+      it 'select should allow fields with special characters', ->
+        setup()
+        try
+          populate({id: 'xy', 'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.select('position.lat').where('id = ?', 'xy').fetch()
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Object))
+          expect(result.rows).toEqual(jasmine.any(Array))
+          expect(result.rows.length).toBe(1)
+          # pg returns data as strings
+          expect(result.rows[0]['position.lat']).toBe('34.5')
+        finally
+          tearDown()
+
+      it 'where clauses must be explicitly quoted with backticks', ->
+        setup()
+        try
+          populate({id: 'xy', 'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.select().where('`position.lat` = ?', 34.5).fetch()
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Object))
+          expect(result.rows).toEqual(jasmine.any(Array))
+          expect(result.rows.length).toBe(1)
+          # pg returns data as strings
+          expect(result.rows[0]['position.lat']).toBe('34.5')
+        finally
+          tearDown()

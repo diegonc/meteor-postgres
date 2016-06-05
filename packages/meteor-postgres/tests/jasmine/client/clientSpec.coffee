@@ -14,6 +14,7 @@ describe 'SQL.Server', ->
 
   testTasks = sqlStub 'test_tasks'
   testUsers = sqlStub 'test_users'
+  testQuotes = sqlStub 'test_quotes'
 
   beforeEach (done) ->
     try
@@ -179,3 +180,69 @@ describe 'SQL.Server', ->
         testTasks.remove().save()
         result = testTasks.select().fetch()
         expect(result.length).toBe(0)
+
+    describe 'quoting', ->
+      fieldsContainingSpecialChars =
+        'position.lat': ['$float']
+        'position.lng': ['$float']
+
+      setup = ->
+        testQuotes.createTable(fieldsContainingSpecialChars)
+
+      populate = (objs...) ->
+        _.map(objs, (o) ->
+          testQuotes.insert(o).save())
+
+      tearDown = ->
+        testQuotes.dropTable().save()
+
+      it 'createTable should allow fields with special characters', ->
+        expect(-> setup()).not.toThrow()
+        tearDown()
+
+      it 'insert should allow fields with special characters', ->
+        setup()
+        try
+          populate({'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.select().fetch()
+          expect(result).toEqual(jasmine.any(Array))
+          expect(result[0]).toEqual(jasmine.any(Object))
+          expect(result[0]['position.lat']).toBe(34.5)
+        finally
+          tearDown()
+
+      it 'update should allow fields with special characters', ->
+        setup()
+        try
+          populate({id: 'xy', 'position.lat': 34.5, 'position.lng': 56.8})
+          testQuotes.update({'position.lat': 12.4}).where('id = ?', 'xy').save()
+          result = testQuotes.select().where('id = ?', 'xy').fetch()
+          expect(result).toEqual(jasmine.any(Array))
+          expect(result[0]).toEqual(jasmine.any(Object))
+          expect(result[0]['position.lat']).toBe(12.4)
+        finally
+          tearDown()
+
+      it 'select should allow fields with special characters', ->
+        setup()
+        try
+          populate({id: 'yz', 'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.select('position.lat').where('id = ?', 'yz').fetch()
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Array))
+          expect(result.length).toBe(1)
+          expect(result[0]['position.lat']).toBe(34.5)
+        finally
+          tearDown()
+
+      it 'where clauses must be explicitly quoted with backticks', ->
+        setup()
+        try
+          populate({id: 'wz', 'position.lat': 34.5, 'position.lng': 56.8})
+          result = testQuotes.select().where('`position.lat` = ? and id = ?', 34.5, 'wz').fetch()
+          expect(result).not.toEqual(jasmine.any(Error))
+          expect(result).toEqual(jasmine.any(Array))
+          expect(result.length).toBe(1)
+          expect(result[0]['position.lat']).toBe(34.5)
+        finally
+          tearDown()
