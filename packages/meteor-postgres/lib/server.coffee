@@ -58,7 +58,7 @@ SQL.Server::createTable = (tableObj) ->
           inputString += " #{@_TableConstraints[item]}"
     inputString += ', '
 
-  startString += 'id varchar(255) primary key,' if inputString.indexOf(' id') is -1
+  startString += 'id varchar(255) primary key,' if inputString.indexOf(' `id') is -1
 
   watchTrigger = 'watched_table_trigger'
   @inputString = """
