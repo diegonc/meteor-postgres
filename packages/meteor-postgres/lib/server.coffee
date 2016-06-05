@@ -65,7 +65,7 @@ SQL.Server::createTable = (tableObj, constraints = []) ->
           inputString += " #{@_TableConstraints[item]}"
     inputString += ', '
 
-  startString += 'id varchar(255) primary key,' if inputString.indexOf(' id') is -1
+  startString += 'id varchar(255) primary key,' if inputString.indexOf(' `id') is -1
 
   # TableConstraints above are actually column constraints
   # as specified by SQL standard.
