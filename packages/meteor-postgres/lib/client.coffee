@@ -52,7 +52,10 @@ SQL.Client::fetch = (server) ->
   @reactiveData?.depend()
 
   starter = @updateString or @deleteString or @selectString
-  input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + @orderString + @limitString + @offsetString + @groupString + @havingString + ';'
+  input = if @inputString.length > 0
+            "#{@inputString}#{@trailingClauses};"
+          else
+            "#{starter}#{@joinString}#{@whereString}#{@orderString}#{@limitString}#{@offsetString}#{@groupString}#{@havingString}#{@trailingClauses};"
 
   try
     result = alasql(input, @dataArray)
@@ -60,14 +63,20 @@ SQL.Client::fetch = (server) ->
     @clearAll()
 
   if server is 'server'
-    input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + @orderString + @limitString + @offsetString + @groupString + @havingString + ';'
+    input = if @inputString.length > 0
+              "#{@inputString}#{@trailingClauses};"
+            else
+              "#{starter}#{@joinString}#{@whereString}#{@orderString}#{@limitString}#{@offsetString}#{@groupString}#{@havingString}#{@trailingClauses};"
     Meteor.call "#{@table}_fetch", @_convertQueryForServer(input), @dataArray
   @clearAll()
   result
 
 SQL.Client::save = (client) ->
   starter = @updateString or @deleteString or @selectString
-  input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + ';'
+  input = if @inputString.length > 0
+            "#{@inputString}#{@trailingClauses};"
+          else
+            "#{starter}#{@joinString}#{@whereString}#{@trailingClauses};"
 
   try
     result = alasql(input, @dataArray)
@@ -75,7 +84,10 @@ SQL.Client::save = (client) ->
     @clearAll()
 
   unless client is 'client'
-    input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + ';'
+    input = if @inputString.length > 0
+              "#{@inputString}#{@trailingClauses};"
+            else
+              "#{starter}#{@joinString}#{@whereString}#{@trailingClauses};"
     @unvalidated = true
     Meteor.call "#{@table}_save", @_convertQueryForServer(input), @dataArray
 
