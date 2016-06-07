@@ -18,6 +18,9 @@ SQL.Client::createTable = (tableObj) ->
   valOperator = undefined
   inputString = ''
 
+  @schema =
+    fields: tableObj
+
   for key of tableObj
     @tableElements[key] = key
     inputString += " #{@_quote key} "

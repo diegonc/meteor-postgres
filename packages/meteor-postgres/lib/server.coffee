@@ -44,6 +44,9 @@ SQL.Server::createTable = (tableObj) ->
   valOperator = undefined
   inputString = ''
 
+  @schema =
+    fields: tableObj
+
   for key of tableObj
     inputString += " #{@_quote key} "
     inputString += @_DataTypes[tableObj[key][0]]
