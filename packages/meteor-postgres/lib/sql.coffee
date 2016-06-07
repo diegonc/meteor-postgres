@@ -55,7 +55,10 @@ SQL.Sql::dropTable = ->
 
 SQL.Sql::insert = (insertObj) ->
   valueString = ') VALUES ('
-  insertObj.id ||= Random.id(19)
+  # If id field is of type $seq, it should be assigned by the
+  # database.
+  idField = @schema?.fields?.id
+  insertObj.id ||= Random.id(19) unless idField? and idField.indexOf('$seq') != -1
 
   keys = Object.keys insertObj
   insertString = "INSERT INTO #{@table} ("
