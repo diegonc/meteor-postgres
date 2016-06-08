@@ -51,6 +51,9 @@ SQL.Server::createTable = (tableObj, constraints = []) ->
   valOperator = undefined
   inputString = ''
 
+  @schema =
+    fields: tableObj
+
   for key of tableObj
     inputString += " #{@_quote key} "
     inputString += @_DataTypes[tableObj[key][0]]
@@ -135,7 +138,10 @@ SQL.Server::fetch = ->
   data = @dataArray unless data
   unless input
     starter = @updateString or @deleteString or @selectString
-    input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + @orderString + @limitString + @offsetString + @groupString + @havingString + ';'
+    input = if @inputString.length > 0
+              "#{@inputString}#{@trailingClauses};"
+            else
+              "#{starter}#{@joinString}#{@whereString}#{@orderString}#{@limitString}#{@offsetString}#{@groupString}#{@havingString}#{@trailingClauses};"
 
   if arguments.length is 0
     executeQuery = Meteor.wrapAsync(@exec, @)
@@ -159,6 +165,29 @@ SQL.Server::exec = (query, data, cb) ->
       if cb
         cb error, results
   @clearAll()
+
+###*
+# SQL: RETURNING fields
+# Type: Query
+# @params fields Array of either Strings or tuples (String, String)
+#                where the first component is the selected column
+#                name and the second one is the field name
+#                in the result.
+###
+SQL.Server::returning = (fields) ->
+  # This call must be preceeded by insert
+  unless @prevFunc is 'INSERT'
+    throw new Error("Should be called after insert")
+  # TODO - check for tuple instead of Array
+  check(fields, [Match.OneOf(String, Array)])
+  returns = _.map(fields, (field) =>
+    if _.isString(field)
+      @_quote field
+    else
+      "#{@_quote field[0]} AS #{field[1]}"
+    ).join(", ")
+  @trailingClauses += " RETURNING #{returns}"
+  @
 
 ###*
 # Make a synchronous or asynchronous insert/update/delete on the table.
@@ -189,7 +218,10 @@ SQL.Server::save = ->
   data = @dataArray unless data
   unless input
     starter = @updateString or @deleteString or @selectString
-    input = if @inputString.length > 0 then @inputString else starter + @joinString + @whereString + ';'
+    input = if @inputString.length > 0
+              "#{@inputString}#{@trailingClauses};"
+            else
+              "#{starter}#{@joinString}#{@whereString}#{@trailingClauses};"
 
   if arguments.length is 0
     executeQuery = Meteor.wrapAsync(@exec, @)

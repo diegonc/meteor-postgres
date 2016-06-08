@@ -70,7 +70,7 @@ SQL.Sql::_Constraints =
 ###
 
 SQL.Sql::dropTable = ->
-  @inputString = "DROP TABLE IF EXISTS #{@table} CASCADE; DROP FUNCTION IF EXISTS notify_trigger_#{@table}() CASCADE;"
+  @inputString = "DROP TABLE IF EXISTS #{@table} CASCADE; DROP FUNCTION IF EXISTS notify_trigger_#{@table}() CASCADE"
   @prevFunc = 'DROP TABLE'
   @
 
@@ -82,7 +82,10 @@ SQL.Sql::dropTable = ->
 
 SQL.Sql::insert = (insertObj) ->
   valueString = ') VALUES ('
-  insertObj.id ||= Random.id(19)
+  # If id field is of type $seq, it should be assigned by the
+  # database.
+  idField = @schema?.fields?.id
+  insertObj.id ||= Random.id(19) unless idField? and idField.indexOf('$seq') != -1
 
   keys = Object.keys insertObj
   insertString = "INSERT INTO #{@table} ("
@@ -95,7 +98,7 @@ SQL.Sql::insert = (insertObj) ->
     valueString += "$#{i+1}, " if Meteor.isServer
     valueString += '?, ' if Meteor.isClient
 
-  @inputString = "#{insertString.substring(0, insertString.length - 2)}#{valueString.substring(0, valueString.length - 2)});"
+  @inputString = "#{insertString.substring(0, insertString.length - 2)}#{valueString.substring(0, valueString.length - 2)})"
   @prevFunc = 'INSERT'
   @
 
@@ -166,11 +169,11 @@ SQL.Sql::select = ->
 
 SQL.Sql::findOne = ->
   if arguments.length is 1
-    @inputString = "SELECT * FROM #{@table} WHERE #{@table}.id = $1 LIMIT 1;" if Meteor.isServer
-    @inputString = "SELECT * FROM #{@table} WHERE #{@table}.id = ? LIMIT 1;" if Meteor.isClient
+    @inputString = "SELECT * FROM #{@table} WHERE #{@table}.id = $1 LIMIT 1" if Meteor.isServer
+    @inputString = "SELECT * FROM #{@table} WHERE #{@table}.id = ? LIMIT 1" if Meteor.isClient
     @dataArray.push arguments[0]
   else
-    @inputString = "SELECT * FROM #{@table} LIMIT 1;"
+    @inputString = "SELECT * FROM #{@table} LIMIT 1"
 
   @prevFunc = 'FIND ONE'
   @
@@ -307,7 +310,7 @@ SQL.Sql::group = (group) ->
 SQL.Sql::first = (limit) ->
   limit = limit or 1
   @clearAll()
-  @inputString += "SELECT * FROM #{@table} ORDER BY #{@table}.id ASC LIMIT #{limit};"
+  @inputString += "SELECT * FROM #{@table} ORDER BY #{@table}.id ASC LIMIT #{limit}"
   @prevFunc = 'FIRST'
   @
 
@@ -320,7 +323,7 @@ SQL.Sql::first = (limit) ->
 SQL.Sql::last = (limit) ->
   limit = limit or 1
   @clearAll()
-  @inputString += "SELECT * FROM #{@table} ORDER BY #{@table}.id DESC LIMIT #{limit};"
+  @inputString += "SELECT * FROM #{@table} ORDER BY #{@table}.id DESC LIMIT #{limit}"
   @prevFunc = 'LAST'
   @
 
@@ -334,7 +337,7 @@ SQL.Sql::last = (limit) ->
 SQL.Sql::take = (limit) ->
   limit = limit or 1
   @clearAll()
-  @inputString += "SELECT * FROM #{@table} LIMIT #{limit};"
+  @inputString += "SELECT * FROM #{@table} LIMIT #{limit}"
   @prevFunc = 'TAKE'
   @
 
@@ -359,6 +362,7 @@ SQL.Sql::clearAll = ->
   @offsetString = ''
   @groupString = ''
   @havingString = ''
+  @trailingClauses = '' # for INSERT's RETURNING clause
   @dataArray = []
   # error logging
   @prevFunc = ''

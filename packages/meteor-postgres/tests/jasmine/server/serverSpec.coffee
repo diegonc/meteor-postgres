@@ -291,3 +291,27 @@ describe 'SQL.Server', ->
           expect(result.rows[0]['position.lat']).toBe('34.5')
         finally
           tearDown()
+
+  describe 'returning', ->
+    tableWithSerialId =
+      id: ['$seq', '$primary']
+      price: ['$float']
+
+    testRet = sqlStub 'test_returning'
+
+    beforeEach ->
+      testRet.createTable(tableWithSerialId)
+
+    afterEach ->
+      testRet.dropTable().save()
+
+    it 'should return requested fields on insert', ->
+      result = testRet.insert({'price': 34.5}).returning(["id"]).save()
+      expect(result).not.toEqual(jasmine.any(Error))
+      expect(result).toEqual(jasmine.any(Object))
+      expect(result.command).toBe('INSERT')
+      expect(result.rows).toEqual(jasmine.any(Array))
+      expect(result.rows.length).toBe(1)
+      expect(result.fields).toEqual(jasmine.any(Array))
+      expect(result.fields[0]).toEqual(jasmine.any(Object))
+      expect(result.fields[0].name).toBe('id')
