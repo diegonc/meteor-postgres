@@ -137,13 +137,13 @@ SQL.Collection::publish = (collname, pubFunc) ->
         console.error error.message, input
 
   Meteor.methods methodObj
-  Meteor.publish collname, ->
+  Meteor.publish collname, (args...) ->
     # For this implementation to work you must call getCursor and provide a callback with the select
     # statement that needs to be reactive. The 'caboose' on the chain of calls must be autoSelect
     # and it must be passed the param 'sub' which is defining in the anon function.
     # This is a limitation of our implementation and will be fixed in later versions
     { _publishCursor: (sub) ->
-      pubFunc().autoSelect sub
+      pubFunc(args...).autoSelect sub
  }
   return
 
