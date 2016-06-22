@@ -112,6 +112,12 @@ SQL.Sql::remove = ->
 # Special: May pass table, distinct, field to obtain a single record per unique value
 # STATEMENT STARTER/SELECT STRING
 #
+# Note: arguments are a string representation of the field to select
+#       allowing to specify dot notation to pick from a table and
+#       as clause to rename field.
+#
+#       Thus, any quoting has to be done by the caller.
+#
 # SQL: SELECT fields FROM table, SELECT * FROM table
 # Type: Statement Starter
 # Notes: May pass distinct, field (two separate arguments) to obtain a single record per unique value
@@ -124,7 +130,7 @@ SQL.Sql::select = ->
   if arguments.length >= 1
     for i in [0..arguments.length-1]
       args += 'DISTINCT ' if arguments[i] is 'distinct'
-      args += "#{@_quote arguments[i]}, " unless arguments[i] is 'distinct'
+      args += "#{arguments[i]}, " unless arguments[i] is 'distinct'
     args = args.substring(0, args.length - 2)
   else
     args += '*'
