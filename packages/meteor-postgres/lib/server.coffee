@@ -258,7 +258,7 @@ SQL.Server::_notificationsDDP = (sub, strings, msg) ->
         tableId: tableId
 
   else if message[1].operation is 'UPDATE'
-    selectString = "#{strings.select + strings.join} WHERE \"#{@table}\".id = '#{message[0][@table]}'"
+    selectString = @_convertQuery "#{strings.select + strings.join} WHERE \"#{@table}\".id = '#{message[0][@table]}'"
     pg.connect process.env.MP_POSTGRES, (err, clientSub, done) ->
       if err
         console.log(err, "in #{prevFunc} #{@table}")
@@ -280,7 +280,7 @@ SQL.Server::_notificationsDDP = (sub, strings, msg) ->
               results: results.rows[0]
 
   else if message[1].operation is 'INSERT'
-    selectString = "#{strings.select + strings.join} WHERE \"#{@table}\".id = '#{message[0][@table]}'"
+    selectString = @_convertQuery "#{strings.select + strings.join} WHERE \"#{@table}\".id = '#{message[0][@table]}'"
     pg.connect process.env.MP_POSTGRES, (err, clientSub, done) ->
       if err
         console.log(err, "in #{prevFunc} #{@table}")
