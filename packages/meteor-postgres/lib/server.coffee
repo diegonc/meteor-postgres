@@ -206,7 +206,7 @@ SQL.Server::autoSelect = (sub) ->
   @autoSelectInput = if @autoSelectInput != '' then @autoSelectInput else @selectString + @joinString + @whereString + @orderString + @limitString + ';'
 
   @autoSelectData = if @autoSelectData != '' then @autoSelectData else @dataArray
-  value = @autoSelectInput
+  value = @_convertQuery @autoSelectInput
   @clearAll()
 
   loadAutoSelectClient = (name, cb) ->
